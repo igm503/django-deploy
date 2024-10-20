@@ -31,5 +31,4 @@ else
 fi
 
 echo "Restarting gunicorn service..."
-systemctl --user restart $DJANGO_PROJECT_NAME.service"
-
+systemctl --user restart $DJANGO_PROJECT_NAME.service

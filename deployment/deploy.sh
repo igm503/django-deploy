@@ -73,12 +73,12 @@ else
 fi
 
 # 6. Set up Python virtual environment
-XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER)
+
 run_as_user() {
-    sudo -H -u "$LINUX_USER" bash -c "$1"
+    sudo -H -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) bash -c "$1"
 }
 run_script_as_user() {
-    sudo -H -u "$LINUX_USER" bash "$1"
+    sudo -H -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) bash "$1"
 }
 
 echo "Setting up Python virtual environment..."
