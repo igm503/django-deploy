@@ -73,8 +73,12 @@ else
 fi
 
 # 6. Set up Python virtual environment
+XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER)
 run_as_user() {
     sudo -H -u "$LINUX_USER" bash -c "$1"
+}
+run_script_as_user() {
+    sudo -H -u "$LINUX_USER" bash "$1"
 }
 
 echo "Setting up Python virtual environment..."
@@ -89,27 +93,7 @@ else
     echo "Virtual environment already exists. Skipping creation."
 fi
 
-# 7. Set up Django environment and attempt to load db.json
-echo "Setting up Django environment..."
-run_as_user "
-    cd "$REPO_ROOT/django"
-    source ../venv/bin/activate
-    python3 manage.py migrate
-    python3 manage.py collectstatic --noinput
-"
-
-echo "Loading db.json into database..."
-if [ -f "$REPO_ROOT/deployment/db.json" ]; then
-    run_as_user "
-        cd "$REPO_ROOT/django"
-        source ../venv/bin/activate
-        python3 manage.py loaddata ../deployment/db.json
-    "
-else
-    echo "db.json not found. Skipping loading."
-fi
-
-# 8. Create and place settings_django_deploy.py
+# 7. Create and place settings_django_deploy.py
 echo "Creating settings_django_deploy.py..."
 SETTINGS_TEMPLATE="$REPO_ROOT/deployment/templates/settings_django_deploy.py.template"
 SETTINGS_DEPLOY_PATH="$REPO_ROOT/django/$DJANGO_PROJECT_NAME/settings_django_deploy.py"
@@ -118,7 +102,7 @@ envsubst < "$SETTINGS_TEMPLATE" > "$SETTINGS_DEPLOY_PATH"
 chown $LINUX_USER:$LINUX_GROUP "$SETTINGS_DEPLOY_PATH"
 echo "settings_deploy.py created at $SETTINGS_DEPLOY_PATH"
 
-# 9. Set up Nginx service
+# 8. Set up Nginx service
 echo "Setting up Nginx..."
 NGINX_LOG_DIR="$REPO_ROOT/logs"
 if [ ! -d "$NGINX_LOG_DIR" ]; then
@@ -131,7 +115,7 @@ sudo mv "/tmp/$DJANGO_PROJECT_NAME" "/etc/nginx/sites-available/$DJANGO_PROJECT_
 sudo ln -sf "/etc/nginx/sites-available/$DJANGO_PROJECT_NAME" "/etc/nginx/sites-enabled/"
 sudo nginx -t && sudo systemctl restart nginx
 
-# 10. Set up Gunicorn service
+# 9. Set up Gunicorn service
 echo "Setting up Gunicorn start script..."
 envsubst < "$REPO_ROOT/deployment/templates/gunicorn_start.sh.template" > "$REPO_ROOT/deployment/gunicorn_start.sh"
 chmod +x "$REPO_ROOT/deployment/gunicorn_start.sh"
@@ -142,7 +126,7 @@ SYSTEMD_DIR="/home/$LINUX_USER/.config/systemd/user"
 
 if [ -f "$SYSTEMD_DIR/$DJANGO_PROJECT_NAME.service" ]; then
     echo "Systemd service for $DJANGO_PROJECT_NAME already exists. Stopping service."
-    run_as_user "XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user stop $DJANGO_PROJECT_NAME.service"
+    run_as_user "systemctl --user stop $DJANGO_PROJECT_NAME.service"
 else
     sudo -u $LINUX_USER mkdir -p $SYSTEMD_DIR
 fi
@@ -150,11 +134,14 @@ fi
 envsubst < "$REPO_ROOT/deployment/templates/django-gunicorn.service.template" > "$SYSTEMD_DIR/$DJANGO_PROJECT_NAME.service"
 
 sudo loginctl enable-linger $LINUX_USER
-run_as_user "XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user daemon-reload"
-run_as_user "XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user enable $DJANGO_PROJECT_NAME.service"
-run_as_user "XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user start $DJANGO_PROJECT_NAME.service"
+run_as_user "systemctl --user daemon-reload"
+run_as_user "systemctl --user enable $DJANGO_PROJECT_NAME.service"
+run_as_user "systemctl --user start $DJANGO_PROJECT_NAME.service"
 
+# 10. Set up Django environment and attempt to load db.json
+echo "Setting up Django environment..."
+run_script_as_user "$REPO_ROOT/deployment/update.sh"
 
 echo "Deployment completed successfully!"
-echo "To check gunicorn status, run: sudo -u $LINUX_USER XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user status $DJANGO_PROJECT_NAME.service"
-echo "To check Nginx status, run: sudo systemctl status nginx"
+echo "To check gunicorn status (as root), run: sudo -u $LINUX_USER XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user status $DJANGO_PROJECT_NAME.service"
+echo "To check Nginx status (as root), run: sudo systemctl status nginx"
