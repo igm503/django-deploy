@@ -18,13 +18,26 @@ fi
 
 echo "Starting deployment for $DJANGO_PROJECT_NAME"
 
-# 1. Create django user if it doesn't exist
+# 1. Create user and group if they don't exist
+if ! getent group "$LINUX_GROUP" > /dev/null 2>&1; then
+    echo "Creating group $LINUX_GROUP..."
+    groupadd --system "$LINUX_GROUP"
+else
+    echo "Group $LINUX_GROUP already exists."
+fi
+
 if ! id "$LINUX_USER" &>/dev/null; then
-    useradd -m -s /bin/bash "$LINUX_USER"
+    echo "Creating user $LINUX_USER..."
+    sudo useradd --system --gid "$LINUX_GROUP" --shell /bin/bash --home "$LINUX_USER_HOME" "$LINUX_USER"
     echo "$LINUX_USER user created."
 else
     echo "$LINUX_USER user already exists."
 fi
+
+if [ ! -d "$LINUX_USER_HOME" ]; then
+    mkdir -p "$LINUX_USER_HOME"
+fi
+chown "$LINUX_USER:$LINUX_GROUP" "$LINUX_USER_HOME"
 
 # 2. Install necessary system packages
 echo "Checking and installing necessary system packages..."
@@ -81,8 +94,8 @@ echo "Setting up Django environment..."
 run_as_user "
     cd "$REPO_ROOT/django"
     source ../venv/bin/activate
-    python manage.py migrate
-    python manage.py collectstatic --noinput
+    python3 manage.py migrate
+    python3 manage.py collectstatic --noinput
 "
 
 echo "Loading db.json into database..."
@@ -90,7 +103,7 @@ if [ -f "$REPO_ROOT/deployment/db.json" ]; then
     run_as_user "
         cd "$REPO_ROOT/django"
         source ../venv/bin/activate
-        python manage.py loaddata ../deployment/db.json
+        python3 manage.py loaddata ../deployment/db.json
     "
 else
     echo "db.json not found. Skipping loading."
