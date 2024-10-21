@@ -25,9 +25,8 @@ Please don't use this with anything important or fragile if you're not basically
 ## Getting Started 
 This repo currently servers as a template. (In the future, I'll probably make it work as a submodule.) Before starting your new Django project,
 1. Download this repo to your dev environment (don't clone it, or else you'll have to deal with my commit history)
-2. Create your django project in a directory called ```django```:
+2. Create your django project in the ```django/``` directory:
 ```
-mkdir django
 django-admin startproject your-project-name django
 ```
 3. Do your thing, making sure to keep your repository like this:
@@ -115,13 +114,15 @@ If you've deployed your app but want to update the static files or database with
 3. If you made changes to the database models, run `python manage.py makemigrations` and `python manage.py migrate`, if you haven't already
 4. If you made changes to the content of the database, run
 
-    ```python manage.py dumpdata --exclude auth --exclude contenttypes --exclude admin --exclude sessions --natural-primary --natural-foreign --indent 2 > ../deployment/db.json```
+    ```
+   python manage.py dumpdata --exclude auth --exclude contenttypes --exclude admin --exclude sessions --natural-primary --natural-foreign --indent 2 > ../deployment/db.json
+    ```
    
    - This will create or overwrite a json file in the deployment folder called `db.json`
    - If you're overwriting, make sure you have a backup of this file first, either locally or on GitHub
-   - If for some reason you want to include auth, admin, or sessions tables, then remove the "--exclude" flags for those table groups
-5. Commit and push your changes, making sure to include the new migrations and/or db.json file, or, if you modified static files, 
-6. On your server, navigate to the root of the repository and run `bash deployment/update.sh`
+   - If for some reason you want to include ```auth```, ```admin```, or ```sessions``` tables, then remove the ```--exclude``` flags for those table groups
+6. Commit and push your changes, making sure to include the new migrations and/or db.json file, or, if you modified static files, 
+7. On your server, navigate to the root of the repository and run `bash deployment/update.sh`
 
 ## TODO
 - Repackage so that repo can be used as a submodule
