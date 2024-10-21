@@ -6,7 +6,7 @@ SOCKFILE=$REPO_ROOT/run/gunicorn.sock                                 # we will 
 USER=$LINUX_USER                                                      # the user to run as
 GROUP=$LINUX_GROUP                                                    # the group to run as
 NUM_WORKERS=3                                                         # how many worker processes should Gunicorn spawn
-DJANGO_SETTINGS_MODULE=$DJANGO_PROJECT_NAME.settings_djang_deploy     # which settings file should Django use
+DJANGO_SETTINGS_MODULE=$DJANGO_PROJECT_NAME.settings_django_deploy    # which settings file should Django use
 DJANGO_WSGI_MODULE=$DJANGO_PROJECT_NAME.wsgi                          # WSGI module name
 
 # Activate the virtual environment

@@ -1,3 +1,4 @@
 django
 django-extensions
+gunicorn
 psycopg2-binary

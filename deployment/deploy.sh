@@ -18,7 +18,7 @@ fi
 
 echo "Starting deployment for $DJANGO_PROJECT_NAME"
 
-# 1. Create user and group if they don't exist
+# 1. Create user and group
 if ! getent group "$LINUX_GROUP" > /dev/null 2>&1; then
     echo "Creating group $LINUX_GROUP..."
     groupadd --system "$LINUX_GROUP"
@@ -73,24 +73,28 @@ else
 fi
 
 # 6. Set up Python virtual environment
-
 run_as_user() {
-    sudo -H -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) bash -c "$1"
+    sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) bash -c "$1"
 }
 run_script_as_user() {
-    sudo -H -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) bash "$1"
+    sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) bash "$1"
 }
 
 echo "Setting up Python virtual environment..."
-if [ ! -d "$REPO_ROOT/venv" ]; then
-run_as_user "
-    cd "$REPO_ROOT"
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-"
+if [ ! -d "$REPO_ROOT/venv/bin" ]; then
+    run_as_user "
+        cd "$REPO_ROOT"
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+    "
 else
-    echo "Virtual environment already exists. Skipping creation."
+    echo "Virtual environment already exists. Skipping creation. Running pip install..."
+    run_as_user "
+        cd "$REPO_ROOT"
+        source venv/bin/activate
+        pip install -r requirements.txt
+    "
 fi
 
 # 7. Create and place settings_django_deploy.py
@@ -117,9 +121,11 @@ sudo nginx -t && sudo systemctl restart nginx
 
 # 9. Set up Gunicorn service
 echo "Setting up Gunicorn start script..."
-envsubst < "$REPO_ROOT/deployment/templates/gunicorn_start.sh.template" > "$REPO_ROOT/deployment/gunicorn_start.sh"
-chmod +x "$REPO_ROOT/deployment/gunicorn_start.sh"
-chown $LINUX_USER:$LINUX_GROUP "$REPO_ROOT/deployment/gunicorn_start.sh"
+GUNICORN_SCRIPT_TEMPLATE="$REPO_DIR/deployment/templates/gunicorn_start.sh.template"
+GUNICORN_SCRIPT_PATH="$REPO_ROOT/deployment/gunicorn_start.sh"
+envsubst '$DJANGO_PROJECT_NAME $REPO_ROOT $LINUX_USER $LINUX_GROUP' < "$GUNICORN_SCRIPT_TEMPLATE" > "$GUNICORN_SCRIPT_PATH"
+chmod +x "$GUNICORN_SCRIPT_PATH"
+chown $LINUX_USER:$LINUX_GROUP "$GUNICORN_SCRIPT_PATH"
 
 echo "Setting up Gunicorn systemd service..."
 SYSTEMD_DIR="/home/$LINUX_USER/.config/systemd/user"
