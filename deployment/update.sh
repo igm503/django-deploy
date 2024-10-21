@@ -17,13 +17,16 @@ fi
 cd "$REPO_ROOT/django"
 source ../venv/bin/activate
 
-echo "Attempting to collect static files..."
+echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-echo "Attempting to apply database migrations..."
+echo "Making database migrations..."
+python manage.py makemigrations
+
+echo "Applying database migrations..."
 python manage.py migrate
 
-echo "Attempting to load db.json into database..."
+echo "Loading db.json into database..."
 if [ -f "$REPO_ROOT/deployment/db.json" ]; then
     python manage.py loaddata ../deployment/db.json
 else
