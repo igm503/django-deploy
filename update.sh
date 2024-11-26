@@ -30,8 +30,8 @@ echo "Applying database migrations..."
 python manage.py migrate
 
 echo "Loading db.json into database..."
-if [ -f "$REPO_ROOT/deployment/db.json" ]; then
-    python manage.py loaddata ../deployment/db.json
+if [ -f "$REPO_ROOT/db.json" ]; then
+    python manage.py loaddata "$REPO_ROOT/db.json"
 else
     echo "db.json not found. Skipping loading."
 fi

@@ -97,27 +97,27 @@ root@your-server:~/project# git submodule update --init
      DB_HOST=...               # Don't change this unless you already have a database server running on a different machine
      DB_PORT=...               # Don't change this unless you already have a database server running on a different port
      ```
-6. Run the ```deployment/deploy.sh``` script as root
-7. [Optional] If you want to use Certbot to get a certificate, run the ```deployment/certbot.sh``` script as root and answer the questions.
+6. Run the ```django-deploy/deploy.sh``` script as root
+7. [Optional] If you want to use Certbot to get a certificate, run the ```django-deploy/certbot.sh``` script as root and answer the questions.
    
 All together:
 ```
 root@your-server:~# git clone https://github.com/user/project.git
 root@your-server:~# cd project
 root@your-server:~/project# git submodule update --init
-root@your-server:~/project# ./deployment/deploy.sh
+root@your-server:~/project# ./django-deploy/deploy.sh
 
 # [Optional] Get a certificate
 
 # project/ has been moved to /home/$LINUX_USER/project by deploy.sh
 
 root@your-server:~/project# cd /home/example_user/project
-root@your-server:/home/example_user/project# ./deployment/certbot.sh
+root@your-server:/home/example_user/project# ./django-deploy/certbot.sh
 ```
 
 ### Troubleshooting
 
-Sometimes, the first time your run ```deployment/deploy.sh``` it will fail when creating the Gunicorn service. That's fine, just navigate to your project (it has been moved to your linux user's home dir) and run the script again. The script is mostly idempotent.
+Sometimes, the first time your run ```django-deploy/deploy.sh``` it will fail when creating the Gunicorn service. That's fine, just navigate to your project (it has been moved to your linux user's home dir) and run the script again. The script is mostly idempotent.
 
 One way the deploy script isn't idempotent, however, is that it'll remove the Certbot certificate config from your nginx site config. If you rerun ```deployment/deploy.sh``` after running ```deployment/certbot.sh```, just run the certbot script again. Be sure to tell certbot to use the certificate you already have when prompted, unless for some reason you want it to generate a new certificate.
 
@@ -127,24 +127,24 @@ Sometimes, nginx won't connect to the Gunicorn server. In my experience, manuall
 
 The deployment script will create nginx and gunicorn services to run your web server. The gunicorn service is owned by the user you specify in the ```django-deploy/.env``` file. As a result, checking the status or restarting the gunicorn service can be annoying if you aren't logged in as that user. 
 
-To check the status of the nginx and gunicorn services more easily, you can run the ```deployment/status.sh``` script as root with the argument of the service you want to check:
+To check the status of the nginx and gunicorn services more easily, you can run the ```django-deploy/status.sh``` script as root with the argument of the service you want to check:
 ```
 # Check the status of the gunicorn service
-root@your-server:/path/to/your/repo# ./deployment/status.sh gunicorn
+root@your-server:/path/to/your/repo# ./django-deploy/status.sh gunicorn
 
 # Check the status of the nginx service
-root@your-server:/path/to/your/repo# ./deployment/status.sh nginx
+root@your-server:/path/to/your/repo# ./django-deploy/status.sh nginx
 ```
-To restart the services, run the ```deployment/restart.sh``` script as root, with the argument of the service you want to restart:
+To restart the services, run the ```django-deploy/restart.sh``` script as root, with the argument of the service you want to restart:
 ```
 # Restart the gunicorn service
-root@your-server:/path/to/your/repo# ./deployment/restart.sh gunicorn
+root@your-server:/path/to/your/repo# ./django-deploy/restart.sh gunicorn
 
 # Restart the nginx service
-root@your-server:/path/to/your/repo# ./deployment/restart.sh nginx
+root@your-server:/path/to/your/repo# ./django-deploy/restart.sh nginx
 
 # Restart both services
-root@your-server:/path/to/your/repo# ./deployment/restart.sh all
+root@your-server:/path/to/your/repo# ./django-deploy/restart.sh all
 ```
 
 ## Updating your Server's Database or Static Files
@@ -157,16 +157,16 @@ If you've deployed your app but want to update the static files or database with
 4. If you made changes to the content of the database, run
 
     ```
-   python manage.py dumpdata --exclude auth --exclude contenttypes --exclude admin --exclude sessions --natural-primary --natural-foreign --indent 2 > ../deployment/db.json
+   python manage.py dumpdata --exclude auth --exclude contenttypes --exclude admin --exclude sessions --natural-primary --natural-foreign --indent 2 > ../db.json
     ```
    
-   - This will create or overwrite a json file in the deployment folder called `db.json`
+   - This will create or overwrite a json file in the repo root dir called `db.json`
    - If you're overwriting, make sure you have a backup of this file first, either locally or on GitHub
    - If for some reason you want to include ```auth```, ```admin```, or ```sessions``` tables, then remove the ```--exclude``` flags for those table groups
 6. Commit and push your changes, making sure to include the new migrations and/or db.json file, or, if you modified static files, 
 7. On your server, navigate to the root of the repository and run the `django-deploy/update.sh` script as root.
 ```
-root@your-server:/path/to/your/repo# ./deployment/update.sh
+root@your-server:/path/to/your/repo# ./django-deploy/update.sh
 ```
 
 ## Updates
