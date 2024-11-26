@@ -13,5 +13,32 @@ else
     exit 1
 fi
 
-sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user restart $DJANGO_PROJECT_NAME.service
-sudo systemctl restart nginx
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 [nginx|gunicorn|all]"
+    exit 1
+fi
+
+restart_gunicorn() {
+    sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user restart $DJANGO_PROJECT_NAME.service
+}
+
+restart_nginx() {
+    sudo systemctl restart nginx
+}
+
+case "$1" in
+    "nginx")
+        restart_nginx
+        ;;
+    "gunicorn")
+        restart_gunicorn
+        ;;
+    "all")
+        restart_gunicorn
+        restart_nginx
+        ;;
+    *)
+        echo "Invalid argument. Use 'nginx', 'gunicorn', or 'all'"
+        exit 1
+        ;;
+esac
