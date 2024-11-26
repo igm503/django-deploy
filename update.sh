@@ -2,9 +2,8 @@
 set -e
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
-ENV_FILE="$REPO_DIR/.env"
+ENV_FILE="$SCRIPT_DIR/.env"
 if [ -f "$ENV_FILE" ]; then
     set -a
     source "$ENV_FILE"
@@ -13,6 +12,10 @@ else
     echo "Error: .env file not found at $ENV_FILE"
     exit 1
 fi
+
+restart_gunicorn() {
+    sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user restart $DJANGO_PROJECT_NAME.service
+}
 
 cd "$REPO_ROOT/django"
 source ../venv/bin/activate
@@ -34,4 +37,4 @@ else
 fi
 
 echo "Restarting gunicorn service..."
-systemctl --user restart $DJANGO_PROJECT_NAME.service
+restart_gunicorn

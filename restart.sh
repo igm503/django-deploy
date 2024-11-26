@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e
 
-ENV_FILE="$REPO_DIR/.env"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+ENV_FILE="$SCRIPT_DIR/.env"
 if [ -f "$ENV_FILE" ]; then
     set -a
     source "$ENV_FILE"

@@ -6,7 +6,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Load environment variables
-ENV_FILE="$REPO_DIR/.env"
+ENV_FILE="$SCRIPT_DIR/.env"
 if [ -f "$ENV_FILE" ]; then
     set -a
     source "$ENV_FILE"
@@ -99,7 +99,7 @@ fi
 
 # 7. Create and place settings_django_deploy.py
 echo "Creating settings_django_deploy.py..."
-SETTINGS_TEMPLATE="$REPO_ROOT/deployment/templates/settings_django_deploy.py.template"
+SETTINGS_TEMPLATE="$SCRIPT_DIR/templates/settings_django_deploy.py.template"
 SETTINGS_DEPLOY_PATH="$REPO_ROOT/django/$DJANGO_PROJECT_NAME/settings_django_deploy.py"
 
 envsubst < "$SETTINGS_TEMPLATE" > "$SETTINGS_DEPLOY_PATH"
@@ -108,8 +108,8 @@ echo "settings_deploy.py created at $SETTINGS_DEPLOY_PATH"
 
 # 8. Set up Gunicorn service
 echo "Setting up Gunicorn start script..."
-GUNICORN_SCRIPT_TEMPLATE="$REPO_DIR/deployment/templates/gunicorn_start.sh.template"
-GUNICORN_SCRIPT_PATH="$REPO_ROOT/deployment/gunicorn_start.sh"
+GUNICORN_SCRIPT_TEMPLATE="$SCRIPT_DIR/templates/gunicorn_start.sh.template"
+GUNICORN_SCRIPT_PATH="$SCRIPT_DIR/gunicorn_start.sh"
 envsubst '$DJANGO_PROJECT_NAME $REPO_ROOT $LINUX_USER $LINUX_GROUP' < "$GUNICORN_SCRIPT_TEMPLATE" > "$GUNICORN_SCRIPT_PATH"
 chmod +x "$GUNICORN_SCRIPT_PATH"
 chown $LINUX_USER:$LINUX_GROUP "$GUNICORN_SCRIPT_PATH"
@@ -124,7 +124,7 @@ else
     sudo -u $LINUX_USER mkdir -p $SYSTEMD_DIR
 fi
 
-envsubst < "$REPO_ROOT/deployment/templates/django-gunicorn.service.template" > "$SYSTEMD_DIR/$DJANGO_PROJECT_NAME.service"
+envsubst < "$SCRIPT_DIR/templates/django-gunicorn.service.template" > "$SYSTEMD_DIR/$DJANGO_PROJECT_NAME.service"
 
 sudo loginctl enable-linger $LINUX_USER
 run_as_user "systemctl --user daemon-reload"
@@ -142,14 +142,14 @@ if [ ! -d "$NGINX_LOG_DIR" ]; then
     echo "Created Nginx log directory: $NGINX_LOG_DIR"
 fi
 
-envsubst '$REPO_ROOT $DOMAIN_NAME $DJANGO_PROJECT_NAME' < "$REPO_ROOT/deployment/templates/django-nginx.conf.template" > "/tmp/$DJANGO_PROJECT_NAME"
+envsubst '$REPO_ROOT $DOMAIN_NAME $DJANGO_PROJECT_NAME' < "$SCRIPT_DIR/templates/django-nginx.conf.template" > "/tmp/$DJANGO_PROJECT_NAME"
 sudo mv "/tmp/$DJANGO_PROJECT_NAME" "/etc/nginx/sites-available/$DJANGO_PROJECT_NAME"
 sudo ln -sf "/etc/nginx/sites-available/$DJANGO_PROJECT_NAME" "/etc/nginx/sites-enabled/"
 sudo nginx -t && sudo systemctl restart nginx
 
 # 10. Set up Django environment and attempt to load db.json
 echo "Setting up Django environment..."
-run_script_as_user "$REPO_ROOT/deployment/update.sh"
+run_script_as_user "$SCRIPT_DIR/update.sh"
 
 echo "Deployment appears to have been successful. Check nginx and gunicorn status:"
 echo "To check gunicorn status (as root), run: sudo -u $LINUX_USER XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user status $DJANGO_PROJECT_NAME.service"

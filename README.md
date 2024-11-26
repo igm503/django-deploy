@@ -1,7 +1,7 @@
 # Django Deployment
-A framework for easily deploying PostgreSQL Django projects on Debian-based servers. Mostly follows [Michal Karzynski's advice](https://michal.karzynski.pl/blog/2013/06/09/django-nginx-gunicorn-virtualenv-supervisor/).
+A tool for easily deploying PostgreSQL Django projects on Debian-based servers. Mostly follows [Michal Karzynski's advice](https://michal.karzynski.pl/blog/2013/06/09/django-nginx-gunicorn-virtualenv-supervisor/).
 
-This framework assumes you will develop your django project and edit your database locally and then push the changes to the server periodically, e.g. via GitHub.
+Assumes you will develop your django project and edit your database locally and then push the changes to the server periodically, e.g. via GitHub.
 
 ## Warning
 Please don't use this with anything important or fragile if you're not basically ok with it breaking. No guarantees here about safety.
@@ -23,18 +23,31 @@ Please don't use this with anything important or fragile if you're not basically
 - Some repository structure constraints (see [below](#getting-started))
 
 ## Getting Started 
-This repo currently servers as a template. (In the future, I'll probably make it work as a submodule.) Before starting your new Django project,
-1. Download this repo to your dev environment (don't clone it, or else you'll have to deal with my commit history)
-2. Create your django project in the ```django/``` directory:
-```
-django-admin startproject your-project-name django
-```
-3. Do your thing, making sure to keep your repository like this:
-
+This repo is meant to be used as a submodule. It requires your repository is structured as follows:
 ```
 .
 ├── ...
-├── deployment              
+├── django                      # your django project
+│   ├── your-project-name/
+│   │   └── ...
+│   ├── app1/
+│   │   └── ...
+│   ├── manage.py           
+│   └── ...
+├── static/                     # this is where your static files will be collected when deployed
+│   └── ...
+├── requirements.txt             
+└── ...
+```
+If that's the case, then you can add this repo as submodule to the root of your repository:
+```
+cd REPO_ROOT_DIR && git submodule add https://github.com/igm503/django-deploy
+```
+The resulting structure will be:
+```
+.
+├── ...
+├── django-deploy               # the new submodule
 │   ├── templates/
 │   │   └── ...         
 │   ├── certbot.sh             
@@ -50,10 +63,10 @@ django-admin startproject your-project-name django
 │   └── ...
 ├── static/                     # this is where your static files will be collected when deployed
 │   └── ...
-├── .env            
 ├── requirements.txt             
 └── ...
 ```
+Now do whatever you want, provided that you keep the specified directories organized in the same way. 
 
 ## Deploying your Django Project
 Once you're ready to deploy your project, 
@@ -63,7 +76,11 @@ Once you're ready to deploy your project,
 root@your-server:~# git clone https://github.com/user/project.git
 ```
 3. ```cd``` into the repository's root directory
-4. Create and configure a ```.env``` file from the ```example.env``` template
+4. Initialize the django-deploy submodule:
+```
+root@your-server:~/project# git submodule update --init
+```
+4. Create and configure a ```django-deploy/.env``` file from the ```django-deploy/example.env``` template
 
    
      ```
@@ -87,6 +104,7 @@ All together:
 ```
 root@your-server:~# git clone https://github.com/user/project.git
 root@your-server:~# cd project
+root@your-server:~/project# git submodule update --init
 root@your-server:~/project# ./deployment/deploy.sh
 
 # [Optional] Get a certificate
@@ -105,6 +123,30 @@ One way the deploy script isn't idempotent, however, is that it'll remove the Ce
 
 Sometimes, nginx won't connect to the Gunicorn server. In my experience, manually restarting nginx usually fixes this. 
 
+## Restarting or Checking the Status your Web Server
+
+The deployment script will create nginx and gunicorn services to run your web server. The gunicorn service is owned by the user you specify in the ```django-deploy/.env``` file. As a result, checking the status or restarting the gunicorn service can be annoying if you aren't logged in as that user. 
+
+To check the status of the nginx and gunicorn services more easily, you can run the ```deployment/status.sh``` script as root with the argument of the service you want to check:
+```
+# Check the status of the gunicorn service
+root@your-server:/path/to/your/repo# ./deployment/status.sh gunicorn
+
+# Check the status of the nginx service
+root@your-server:/path/to/your/repo# ./deployment/status.sh nginx
+```
+To restart the services, run the ```deployment/restart.sh``` script as root, with the argument of the service you want to restart:
+```
+# Restart the gunicorn service
+root@your-server:/path/to/your/repo# ./deployment/restart.sh gunicorn
+
+# Restart the nginx service
+root@your-server:/path/to/your/repo# ./deployment/restart.sh nginx
+
+# Restart both services
+root@your-server:/path/to/your/repo# ./deployment/restart.sh all
+```
+
 ## Updating your Server's Database or Static Files
 
 If you've deployed your app but want to update the static files or database with changes that you've made locally, you can easily update the database and/or static file directory on your server as follows:
@@ -122,12 +164,13 @@ If you've deployed your app but want to update the static files or database with
    - If you're overwriting, make sure you have a backup of this file first, either locally or on GitHub
    - If for some reason you want to include ```auth```, ```admin```, or ```sessions``` tables, then remove the ```--exclude``` flags for those table groups
 6. Commit and push your changes, making sure to include the new migrations and/or db.json file, or, if you modified static files, 
-7. On your server, navigate to the root of the repository and run `bash deployment/update.sh`
-
-## TODO
-- Repackage so that repo can be used as a submodule
+7. On your server, navigate to the root of the repository and run the `django-deploy/update.sh` script as root.
+```
+root@your-server:/path/to/your/repo# ./deployment/update.sh
+```
 
 ## Updates
+- 11-26-2024: Repackaged to be used as a submodule. Added instructions for restart and status scripts
 - 10-21-2024: Updated Deployent Setup Script; Update and Certificate Scripts
 - 10-19-2024: Installation and Deployment Setup Scripts
 - 10-16-2024: Initial Commit
