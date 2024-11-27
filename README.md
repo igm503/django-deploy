@@ -23,7 +23,7 @@ Please don't use this with anything important or fragile if you're not basically
 - Some repository structure constraints (see [below](#getting-started))
 
 ## Getting Started 
-This repo is meant to be used as a submodule. It requires your repository is structured as follows:
+This repo is meant to be used as a submodule. It requires your repository to be structured as follows:
 ```
 .
 ├── ...
@@ -36,12 +36,12 @@ This repo is meant to be used as a submodule. It requires your repository is str
 │   └── ...
 ├── static/                     # this is where your static files will be collected when deployed
 │   └── ...
-├── requirements.txt             
+├── requirements.txt            # your project's requirements
 └── ...
 ```
 If that's the case, then you can add this repo as submodule to the root of your repository:
 ```
-cd REPO_ROOT_DIR && git submodule add https://github.com/igm503/django-deploy
+cd /path/to/your/repo && git submodule add https://github.com/igm503/django-deploy
 ```
 The resulting structure will be:
 ```
@@ -63,7 +63,7 @@ The resulting structure will be:
 │   └── ...
 ├── static/                     # this is where your static files will be collected when deployed
 │   └── ...
-├── requirements.txt             
+├── requirements.txt            # your project's requirements
 └── ...
 ```
 Now do whatever you want, provided that you keep the specified directories organized in the same way. 
@@ -98,6 +98,7 @@ root@your-server:~/project# git submodule update --init
      DB_PORT=...               # Don't change this unless you already have a database server running on a different port
      ```
 6. Run the ```django-deploy/deploy.sh``` script as root
+   - [What exactly will this do?](#what-does-deploy.sh-do-)
 7. [Optional] If you want to use Certbot to get a certificate, run the ```django-deploy/certbot.sh``` script as root and answer the questions.
    
 All together:
@@ -123,7 +124,7 @@ One way the deploy script isn't idempotent, however, is that it'll remove the Ce
 
 Sometimes, nginx won't connect to the Gunicorn server. In my experience, manually restarting nginx usually fixes this. 
 
-## Restarting or Checking the Status your Web Server
+## Restarting or Checking the Status of your Web Server
 
 The deployment script will create nginx and gunicorn services to run your web server. The gunicorn service is owned by the user you specify in the ```django-deploy/.env``` file. As a result, checking the status or restarting the gunicorn service can be annoying if you aren't logged in as that user. 
 
@@ -168,6 +169,71 @@ If you've deployed your app but want to update the static files or database with
 ```
 root@your-server:/path/to/your/repo# ./django-deploy/update.sh
 ```
+
+## Uninstalling your Web Server
+
+If you want to uninstall your web server, run the ```django-deploy/uninstall.sh``` script as root:
+```
+root@your-server:/path/to/your/repo# ./django-deploy/uninstall.sh
+```
+You will be prompted for confirmation before uninstalling, and have the option to only undo certain parts of the installation process.
+
+## What Does deploy.sh Do to Your Server?
+
+1. **System User Configuration**
+   - Creates a system group (DJANGO_GROUP) if it doesn't exist
+   - Creates a system user (DJANGO_USER) if it doesn't exist
+   - Creates the user's home directory
+
+2. **System Dependencies**
+   - Updates package lists
+   - Installs system packages:
+     - Python 3
+     - Python virtual environment
+     - PostgreSQL
+     - Nginx
+
+3. **Repository Setup**
+   - Moves your repository to the specified root directory (/home/DJANGO_USER/DJANGO_PROJECT_NAME)
+   - Sets repo owner to the new system user (DJANGO_USER)
+
+4. **Database Configuration**
+   - Creates PostgreSQL user if it doesn't exist
+   - Creates database with specified name
+   - Assigns database ownership to the created user
+
+5. **Python Environment**
+   - Creates a new Python virtual environment
+   - Upgrades pip to latest version
+   - Installs dependencies from:
+     - requirements.txt in this submodule
+     - requirements.txt in the root of your repository
+
+6. **Django Settings**
+   - Moves a deployment-specific settings file (```templates/settings_django_deploy.py```) into your django project
+
+7. **Gunicorn Setup**
+   - Creates Gunicorn start script from template (```templates/gunicorn_start.sh.template```)
+   - Creates a socket directory if it doesn't exist (```/REPO_ROOT/run```)
+   - Generates systemd unit file for Gunicorn from template (```templates/django-gunicorn.service.template```)
+   - Enables and starts the service
+
+8. **Nginx Configuration**
+   - Creates log directory if it doesn't exist (```REPO_ROOT/logs```)
+   - Generates Nginx configuration from template (```templates/django-nginx.conf.template```)
+   - Sets up site configuration in sites-available/sites-enabled
+   - Restarts Nginx service
+
+9. **Django Configuration**
+    - Collects static files (places them in ```REPO_ROOT/static```)
+    - Runs DB migrations
+    - Loads data from ```REPO_ROOT/db.json``` if it exists
+    - Restarts Gunicorn
+
+## Notes
+- The script uses environment variables extensively for configuration
+- Includes error checking and idempotency (can be run multiple times safely)
+- Automatically handles service restarts and system user setup
 
 ## Updates
 - 11-26-2024: Repackaged to be used as a submodule. Added instructions for restart and status scripts
