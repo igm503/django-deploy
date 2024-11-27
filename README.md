@@ -172,11 +172,11 @@ root@your-server:/path/to/your/repo# ./django-deploy/update.sh
 
 ## Uninstalling your Web Server
 
-If you want to uninstall your web server, run the ```django-deploy/uninstall.sh``` script as root:
+If you want to undo (most of) the actions the deployment script performed, run the ```django-deploy/remove.sh``` script as root:
 ```
-root@your-server:/path/to/your/repo# ./django-deploy/uninstall.sh
+root@your-server:/path/to/your/repo# ./django-deploy/remove.sh
 ```
-You will be prompted for confirmation before uninstalling, and have the option to only undo certain parts of the installation process.
+You will be prompted for confirmation before each step of the removal process.
 
 ## What the Deployment Script Does to your Server
 
