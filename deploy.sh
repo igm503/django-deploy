@@ -120,11 +120,6 @@ fi
 echo "Setting up Gunicorn systemd service..."
 SYSTEMD_DIR="/home/$LINUX_USER/.config/systemd/user"
 
-while [ ! -d "/run/user/$(id -u $LINUX_USER)" ]; do
-    echo "Waiting for user runtime directory to be created..."
-    sleep 1
-done
-
 if [ -f "$SYSTEMD_DIR/$DJANGO_PROJECT_NAME.service" ]; then
     echo "Systemd service for $DJANGO_PROJECT_NAME already exists. Stopping service."
     run_as_user "systemctl --user stop $DJANGO_PROJECT_NAME.service"
@@ -135,6 +130,12 @@ fi
 envsubst < "$TEMPLATE_DIR/django-gunicorn.service.template" > "$SYSTEMD_DIR/$DJANGO_PROJECT_NAME.service"
 
 sudo loginctl enable-linger $LINUX_USER
+
+while [ ! -d "/run/user/$(id -u $LINUX_USER)" ]; do
+    echo "Waiting for user runtime directory to be created..."
+    sleep 1
+done
+
 run_as_user "systemctl --user daemon-reload"
 run_as_user "systemctl --user enable $DJANGO_PROJECT_NAME.service"
 run_as_user "systemctl --user start $DJANGO_PROJECT_NAME.service"

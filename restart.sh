@@ -19,10 +19,12 @@ if [ $# -ne 1 ]; then
 fi
 
 restart_gunicorn() {
+    sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user daemon-reload 
     sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user restart $DJANGO_PROJECT_NAME.service
 }
 
 restart_nginx() {
+    sudo systemctl daemon-reload
     sudo systemctl restart nginx
 }
 
