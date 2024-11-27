@@ -98,7 +98,7 @@ root@your-server:~/project# git submodule update --init
      DB_PORT=...               # Don't change this unless you already have a database server running on a different port
      ```
 6. Run the ```django-deploy/deploy.sh``` script as root
-   - [What exactly will this do?](#what-does-deploy.sh-do-)
+   - [What exactly will this do?](#what-the-deployment-script-does-to-your-server)
 7. [Optional] If you want to use Certbot to get a certificate, run the ```django-deploy/certbot.sh``` script as root and answer the questions.
    
 All together:
@@ -178,7 +178,7 @@ root@your-server:/path/to/your/repo# ./django-deploy/uninstall.sh
 ```
 You will be prompted for confirmation before uninstalling, and have the option to only undo certain parts of the installation process.
 
-## What Does deploy.sh Do to Your Server?
+## What the Deployment Script Does to your Server
 
 1. **System User Configuration**
    - Creates a system group (DJANGO_GROUP) if it doesn't exist
