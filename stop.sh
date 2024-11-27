@@ -18,24 +18,24 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
-restart_gunicorn() {
-    sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user restart $DJANGO_PROJECT_NAME.service
+stop_gunicorn() {
+    sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user stop $DJANGO_PROJECT_NAME.service
 }
 
-restart_nginx() {
-    sudo systemctl restart nginx
+stop_nginx() {
+    sudo systemctl stop nginx
 }
 
 case "$1" in
     "nginx")
-        restart_nginx
+        stop_nginx
         ;;
     "gunicorn")
-        restart_gunicorn
+        stop_gunicorn
         ;;
     "all")
-        restart_gunicorn
-        restart_nginx
+        stop_nginx
+        stop_gunicorn
         ;;
     *)
         echo "Invalid argument. Use 'nginx', 'gunicorn', or 'all'"
