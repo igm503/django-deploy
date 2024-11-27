@@ -76,9 +76,6 @@ fi
 run_as_user() {
     sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) bash -c "$1"
 }
-run_script_as_user() {
-    sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) bash "$1"
-}
 
 echo "Setting up Python virtual environment..."
 if [ ! -d "$REPO_ROOT/venv/bin" ]; then
@@ -114,6 +111,11 @@ GUNICORN_SCRIPT_PATH="$REPO_ROOT/django-deploy/gunicorn_start.sh"
 envsubst '$DJANGO_PROJECT_NAME $REPO_ROOT $LINUX_USER $LINUX_GROUP' < "$GUNICORN_SCRIPT_TEMPLATE" > "$GUNICORN_SCRIPT_PATH"
 chmod +x "$GUNICORN_SCRIPT_PATH"
 chown $LINUX_USER:$LINUX_GROUP "$GUNICORN_SCRIPT_PATH"
+
+# make socket directory
+if [ ! -d "$REPO_ROOT/run" ]; then
+    run_as_user "mkdir -p $REPO_ROOT/run"
+fi
 
 echo "Setting up Gunicorn systemd service..."
 SYSTEMD_DIR="/home/$LINUX_USER/.config/systemd/user"
@@ -155,8 +157,8 @@ sudo nginx -t && sudo systemctl restart nginx
 
 # 10. Set up Django environment and attempt to load db.json
 echo "Setting up Django environment..."
-run_script_as_user "$REPO_ROOT/django-deploy/update.sh"
+bash "$REPO_ROOT/django-deploy/update.sh"
 
 echo "Deployment appears to have been successful. Check nginx and gunicorn status:"
-echo "To check gunicorn status (as root), run: sudo -u $LINUX_USER XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user status $DJANGO_PROJECT_NAME.service"
-echo "To check Nginx status (as root), run: sudo systemctl status nginx"
+echo "To check gunicorn status (as root), run: sudo $REPO_ROOT/django-deploy/status.sh gunicorn" 
+echo "To check nginx status (as root), run: sudo $REPO_ROOT/django-deploy/status.sh nginx (or just 'sudo systemctl status nginx')" 

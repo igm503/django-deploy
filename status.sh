@@ -20,10 +20,12 @@ fi
 
 case "$1" in
     "nginx")
+        sudo systemctl status nginx.service
         sudo journalctl -u nginx.service -b
         ;;
     "gunicorn")
-        sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) journalctl --user-unit $DJANGO_PROJECT_NAME.service -b
+        sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) systemctl --user status $DJANGO_PROJECT_NAME.service
+        sudo -u "$LINUX_USER" XDG_RUNTIME_DIR=/run/user/$(id -u $LINUX_USER) journalctl --user --unit $DJANGO_PROJECT_NAME.service -b
         ;;
     *)
         echo "Invalid argument. Use 'nginx' or 'gunicorn'"
