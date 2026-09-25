@@ -13,7 +13,7 @@ Please don't use this with anything important or fragile if you're not basically
 - Django Project Deployment
   - Creates, configures, and Loads Data into your database
   - Creates and configures Gunicorn + Nginx services
-  - HTTPS certificate installation via [Certbot](https://certbot.eff.org/)
+  - HTTPS certificate installation and automatic renewal via [Certbot](https://certbot.eff.org/)
 - Easy Database and Static File Updating
 
 ## Requirements
@@ -99,7 +99,7 @@ root@your-server:~/project# git submodule update --init
      ```
 6. Run the ```django-deploy/deploy.sh``` script as root
    - [What exactly will this do?](#what-the-deployment-script-does-to-your-server)
-7. [Optional] If you want to use Certbot to get a certificate, run the ```django-deploy/certbot.sh``` script as root and answer the questions.
+7. [Optional] If you want to use Certbot to get a certificate, run the ```django-deploy/certbot.sh``` script as root and answer the questions. After successful setup, the script also enables automatic renewal.
    
 All together:
 ```
@@ -114,6 +114,23 @@ root@your-server:~/project# ./django-deploy/deploy.sh
 
 root@your-server:~/project# cd /home/example_user/project
 root@your-server:/home/example_user/project# ./django-deploy/certbot.sh
+```
+
+### Automatic Certificate Renewal
+
+`certbot.sh` enables the system-wide `certbot-renew.timer`, which checks all Certbot-managed certificates twice daily, with up to an hour of random delay. Certificates are renewed only when due; the Nginx installer reloads Nginx after renewal. The timer remains enabled across reboots and catches up on missed runs.
+
+If Certbot and your certificates are already installed, enable renewal without reinstalling packages or requesting a certificate:
+
+```bash
+sudo ./django-deploy/certbot.sh --renewal-only
+```
+
+Check the schedule or test renewal:
+
+```bash
+systemctl list-timers certbot-renew.timer
+sudo certbot renew --dry-run
 ```
 
 ### Troubleshooting
