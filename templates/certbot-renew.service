@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew managed Let's Encrypt certificates
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certbot renew --quiet --non-interactive --no-random-sleep-on-renew
